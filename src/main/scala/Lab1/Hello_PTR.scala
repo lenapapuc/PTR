@@ -1,6 +1,6 @@
+import Lab1.{Hello, Tasks}
 
-
-  @main def main(): Unit = {
+@main def main(): Unit = {
     Hello.helloPTR()
     println()
 
