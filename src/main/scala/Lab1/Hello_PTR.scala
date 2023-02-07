@@ -1,4 +1,4 @@
-import Lab1.{Hello, Tasks}
+import Lab1.{Hello, MainTasks, Tasks}
 
 @main def main(): Unit = {
     Hello.helloPTR()
@@ -19,4 +19,15 @@ import Lab1.{Hello, Tasks}
     println(Tasks.smallestNumber(1,5,4))
     println(Tasks.rotateLeft(List(1,2,4,8,4), 3))
     println(Tasks.listRightAngleTriangles())
+
+    val array = Array("Hello", "Alaska", "Dad", "Peace")
+    println(MainTasks.lineWords(array).toList)
+
+    println(MainTasks.encode("lorem", 3))
+    println(MainTasks.decode("oruhp", 3))
+
+    println(MainTasks.letterCombinations("234"))
+    println(MainTasks.removeConsecutiveDuplicates(List(1,2,2,2,4,8,4)))
+    println(MainTasks.groupAnagrams(Array("eat", "tea", "tan", "ate", "nat", "bat")))
+
   }
