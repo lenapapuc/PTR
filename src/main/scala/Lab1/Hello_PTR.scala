@@ -31,5 +31,5 @@ import Lab1.{BonusTasks, Hello, MainTasks, Tasks}
     println(MainTasks.groupAnagrams(Array("eat", "tea", "tan", "ate", "nat", "bat")))
 
     println(BonusTasks.commonPrefix(List("mayfl", "flow")))
-
+    println(BonusTasks.toRoman(354))
   }
