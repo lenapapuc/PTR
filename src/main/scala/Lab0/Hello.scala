@@ -1,4 +1,4 @@
-package Lab1
+package Lab0
 
 object Hello {
 

@@ -1,4 +1,5 @@
-import Lab1.{BonusTasks, Hello, MainTasks, Tasks}
+import Lab0.Hello
+import Lab1.{BonusTasks, MainTasks, Tasks}
 
 @main def main(): Unit = {
     Hello.helloPTR()
@@ -26,10 +27,10 @@ import Lab1.{BonusTasks, Hello, MainTasks, Tasks}
     println(MainTasks.encode("lorem", 3))
     println(MainTasks.decode("oruhp", 3))
 
-    println(MainTasks.letterCombinations("234"))
+    println(MainTasks.letterCombinations("23"))
     println(MainTasks.removeConsecutiveDuplicates(List(1,2,2,2,4,8,4)))
     println(MainTasks.groupAnagrams(Array("eat", "tea", "tan", "ate", "nat", "bat")))
 
-    println(BonusTasks.commonPrefix(List("mayfl", "flow")))
+    println(BonusTasks.commonPrefix(List("flowers", "flow")))
     println(BonusTasks.toRoman(354))
   }

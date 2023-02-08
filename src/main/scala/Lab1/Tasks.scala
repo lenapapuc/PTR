@@ -110,7 +110,6 @@ object Tasks {
       c = Math.sqrt(a * a + b * b)
       if (c == c.round)
     } yield (a, b, c.toInt)
-
   }.toList
 
   

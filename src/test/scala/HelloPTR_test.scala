@@ -1,4 +1,4 @@
-import Lab1.Hello
+import Lab0.Hello
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.*
