@@ -1,4 +1,4 @@
-import Lab0.helloPTR
+import Project0.Lab0.helloPTR
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.*

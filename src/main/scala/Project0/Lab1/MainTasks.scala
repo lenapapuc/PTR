@@ -1,4 +1,4 @@
-package Lab1
+package Project0.Lab1
 
 import sun.awt.SunHints.Key
 

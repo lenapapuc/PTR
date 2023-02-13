@@ -1,4 +1,4 @@
-package Lab1
+package Project0.Lab1
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random

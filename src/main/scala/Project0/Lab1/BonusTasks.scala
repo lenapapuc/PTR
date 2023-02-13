@@ -1,4 +1,4 @@
-package Lab1
+package Project0.Lab1
 import java.util
 import scala.util.control.Breaks.*
 object BonusTasks
