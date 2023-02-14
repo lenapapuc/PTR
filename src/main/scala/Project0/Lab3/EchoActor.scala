@@ -19,6 +19,5 @@ object app extends App {
     actor ! Map{10 -> "Hello"}
 
     system.terminate()
-  
 
 }

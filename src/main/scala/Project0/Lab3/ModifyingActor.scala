@@ -3,7 +3,7 @@ package Project0.Lab3
 import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
 import akka.event.Logging
 import akka.actor.typed.scaladsl.LoggerOps
-import akka.pattern.gracefulStop
+
 
 object app2 extends App{
 
