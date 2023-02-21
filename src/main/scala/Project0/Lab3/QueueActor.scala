@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext.Implicits.global
 
-// Messages
 case class Enqueue(value: Any)
 case object Dequeue
 

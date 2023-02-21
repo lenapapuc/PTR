@@ -20,7 +20,7 @@ class Semaphore(numPermits: Int) extends Actor {
         //println("Semaphore was aquired")
         sender() ! true
       } else {
-        //println("Waiting")
+        println("Waiting")
         waiting = waiting.enqueue(sender())
       }
     case Release() =>
@@ -56,17 +56,12 @@ class TestActor(semaphore: ActorRef) extends Actor {
 object SemaphoreTest extends App {
 
   val system = akka.actor.ActorSystem("SemaphoreTest")
-  val semaphore = system.actorOf(Props(new Semaphore(3)), "semaphore")
+  val semaphore = system.actorOf(Props(new Semaphore(2)), "semaphore")
 
   // Create 5 test actors that share the semaphore
   val actors = (1 to 5).map(i => system.actorOf(Props(new TestActor(semaphore)), s"actor$i"))
 
- /* semaphore ! Acquire()
-  semaphore ! Acquire()
-  semaphore ! Acquire()
-  semaphore ! Acquire()
-  semaphore ! Release()
-  semaphore ! Acquire()*/
+
   
   // Start the test actors
   actors.foreach(_ ! "start")
