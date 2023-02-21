@@ -1,37 +1,47 @@
-package Project0.Lab4
+import akka.actor.{Actor, ActorLogging, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props, OneForOneStrategy, SupervisorStrategy}
 
-case object KillWorker
-case class WorkerMessage(message: String)
+import akka.actor.Kill
 
-class WorkerActor extends Actor with ActorLogging {
+
+
+class EchoActor extends Actor with ActorLogging {
+
   override def receive: Receive = {
-    case messages: java.lang.String => log.info(s"Confirmed $messages")
-    case WorkerMessage(message) =>
-      log.info(s"$self Received message: $message")
-    case KillWorker =>
-      log.info(s"Received kill message, stopping worker $self")
-      //context.parent ! KillWorker
-      context.stop(self)
+
+    case message => log.info(s"$message")
+    case message : Kill =>
+      log.info(s"Received kill message")
+      throw new Exception("Worker failed!")
+  }
+
+
+
+  override def postRestart(reason: Throwable): Unit = {
+    log.info(s"Worker $self restarted")
   }
 }
 
 class SupervisorActor(numWorkers: Int) extends Actor with ActorLogging {
-  var workers = (1 to numWorkers).map(_ => context.actorOf(Props[WorkerActor]()))
 
-  def receive: Receive = {
-    case messages: java.lang.String => log.info(s"Confirmed $messages")
-    case WorkerMessage(message) =>
+  var workers = (1 to numWorkers).map(_ => context.actorOf(Props[EchoActor]()))
+  import Kill._
+
+  override def receive: Receive = {
+
+    case message =>
       log.info(s"Broadcasting message to all workers: $message")
-      workers.foreach(worker => worker ! WorkerMessage(message))
-    case KillWorker =>
-      log.info("Received kill message, restarting all workers")
-      workers.foreach(worker => context.stop(worker))
-      workers.foreach(_=>SupervisorStrategy.Restart)
-      //workers.foreach(println)
+      workers.foreach(worker => worker ! message)
+    case message: Kill =>
+      log.info("Received kill message, stopping all workers")
+      context.children.foreach(context.unwatch)
+      context.children.foreach(child => child ! Kill)
   }
-}
+
+      override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
+        case _: Exception => SupervisorStrategy.Restart
+      }
+  }
 
 object Main extends App {
   val system = ActorSystem("SupervisedPool")
@@ -39,12 +49,14 @@ object Main extends App {
   val supervisor = system.actorOf(Props(new SupervisorActor(numWorkers = 3)), "supervisor")
   var selection = system.actorSelection("/user/supervisor/$c")
 
-  supervisor ! WorkerMessage("Hello, workers!")
-  Thread.sleep(100)
-  selection ! KillWorker
+
+
+  supervisor ! "Hello, workers!"
   Thread.sleep(1000)
-  selection = system.actorSelection("/user/supervisor/$d")
-  supervisor ! WorkerMessage("Hello again, workers!")
+  selection ! Kill
+  Thread.sleep(1000)
+  supervisor ! "Hello again, workers!"
+
 
   system.terminate()
 }
