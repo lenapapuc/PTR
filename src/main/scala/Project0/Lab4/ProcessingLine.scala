@@ -86,12 +86,10 @@ class SupervisorActor extends Actor with ActorLogging {
 
   override def preStart() : Unit = {
     joinerActor = context.actorOf(Props[JoinerActor](), "joinerActor")
-
     swappingActor = context.actorOf(Props(new SwappingActor(joinerActor)),"swappingActor")
     splitActor = context.actorOf(Props(new SplitActor(swappingActor)),"splitActor")
-
-
   }
+
   override def receive: Receive = {
     case message: String => splitActor ! message
     case message => log.info("I can't process this message")
