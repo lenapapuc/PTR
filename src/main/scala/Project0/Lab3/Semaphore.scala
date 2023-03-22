@@ -33,8 +33,6 @@ class Semaphore(numPermits: Int) extends Actor {
   }
 }
 
-
-
 class TestActor(semaphore: ActorRef) extends Actor {
   def receive: Receive = {
     case "start" =>

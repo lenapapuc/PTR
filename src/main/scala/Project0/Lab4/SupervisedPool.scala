@@ -23,13 +23,10 @@ class SupervisorActor(numWorkers: Int) extends Actor with ActorLogging {
   var workers = (1 to numWorkers).map(_ => context.actorOf(Props[EchoActor]()))
 
   override def receive: Receive = {
-
     case message =>
       log.info(s"Broadcasting message to all workers: $message")
       workers.foreach(worker => worker ! message)
-
   }
-
       override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
         case _: Exception => SupervisorStrategy.Restart
       }

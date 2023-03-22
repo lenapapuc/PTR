@@ -441,11 +441,309 @@ This task is the implementation of an actor that whilst receiving an integer, it
 receiving a string it transforms it to lowercase, and if it receives any other message, it outputs a message that
 is supposed to represent an error.
 
+
+**Task 3** -- Average Actor
+```scala
+object AverageActor{
+
+  def apply(): Behavior[Double] = {
+    calculateAverage(0.0, 0)
+  }
+
+  def calculateAverage(sum: Double, count: Int): Behavior[Double] =
+    Behaviors.receive { (context, message) =>
+      val newSum = sum + message
+      val newCount = count + 1
+      val average = newSum / newCount
+      println(s"Current average is $average")
+      calculateAverage(newSum, newCount)
+    }
+}
+```
+
+The Average Actor that I created, contains a method 
+calculateAverage that takes the count of the numbers received so far and
+the sum of those numbers so far. At the end, it applies the method again as it
+receives new inputs.
+
+**Task 4** -- FIFO Queue
+```scala
+class QueueActor extends Actor {
+  private var queue: List[Any] = List.empty
+
+  def receive: Receive = {
+    case Enqueue(value) =>
+      queue = queue :+ value
+      sender() ! true
+    case Dequeue =>
+      if (queue.nonEmpty) {
+        val head = queue.head
+        queue = queue.tail
+        sender() ! Some(head)
+      } else {
+        sender() ! None
+      }
+  }
+}
+```
+The QueueActor receives messages Enqueue and Dequeue and add
+or remove elements from the temporary list. Then, they send back to the 
+test the fitting answer
+```scala
+class QueueHelper(queue: ActorRef) {
+
+implicit val timeout: Timeout = 5.seconds
+
+def enqueue(value: Any): Future[Boolean] = {
+(queue ? Enqueue(value)).mapTo[Boolean]
+}
+
+def dequeue(): Future[Option[Any]] = {
+(queue ? Dequeue).mapTo[Option[Any]]
+}
+
+}
+```
+
+Then, we introduce another actor, Queue Helper that receives both
+the initial requests and the responses and outputs success or failure if the 
+request was executed.
+
+**Task 5** -- Semaphore
+```scala
+class Semaphore(numPermits: Int) extends Actor {
+
+  private var permits = numPermits
+  private var waiting: Queue[ActorRef] = Queue.empty
+
+  def receive: Receive = {
+    case Acquire() =>
+      if (permits > 0) {
+        permits -= 1
+        //println("Semaphore was aquired")
+        sender() ! true
+      } else {
+        println("Waiting")
+        waiting = waiting.enqueue(sender())
+      }
+    case Release() =>
+      permits += 1
+      if (waiting.nonEmpty) {
+        val (next, rest) = waiting.dequeue
+        waiting = rest
+        next ! true
+      }
+  }
+}
+
+```
+The Semaphore that I implemented has 2 cases. The 
+case Aquire and case Release. If we are aquiring a semaphore,
+we check if there is a permit available, if it is, we take it and decrease the number of permits available,
+else, we put the actor into a waiting queue. If the case is release
+we increase the number of permits by one, and check if there is someone in the waiting queue. If
+they are, they are removed from the queue, and they are allowed to continue.
+
+## P0W4
+**Task 1** -- Supervisor Pool
+```scala
+class SupervisorActor(numWorkers: Int) extends Actor with ActorLogging {
+
+  var workers = (1 to numWorkers).map(_ => context.actorOf(Props[EchoActor]()))
+
+  override def receive: Receive = {
+    case message =>
+      log.info(s"Broadcasting message to all workers: $message")
+      workers.foreach(worker => worker ! message)
+  }
+  override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case _: Exception => SupervisorStrategy.Restart
+  }
+}
+```
+
+In the Supervisor Pool, we have a supervisor actor, that gets as an input 
+the number of children it's supposed to have and then spawns this number of identical
+supervised actors. In case it receives a message it sends it to all of its children.
+If one of the children fails, it implements a One for One strategy that means it restarts 
+only the killed actor.
+
+```scala
+class EchoActor extends Actor with ActorLogging {
+
+  override def receive: Receive = {
+    case message => log.info(s"$message")
+  }
+  override def postRestart(reason: Throwable): Unit = {
+    log.info(s"Worker $self restarted")
+  }
+}
+```
+
+The children are all instances of the Echo Actors. If it receives a message, it logs it.
+If it is restarted, it outputs a message that it has restarted.
+
+**Task 2** -- Processing Line
+```scala
+class SupervisorActor extends Actor with ActorLogging {
+
+  var joinerActor: ActorRef = _
+  var swappingActor: ActorRef = _
+  var splitActor: ActorRef = _
+
+  override def preStart() : Unit = {
+    joinerActor = context.actorOf(Props[JoinerActor](), "joinerActor")
+    swappingActor = context.actorOf(Props(new SwappingActor(joinerActor)),"swappingActor")
+    splitActor = context.actorOf(Props(new SplitActor(swappingActor)),"splitActor")
+  }
+
+  override def receive: Receive = {
+    case message: String => splitActor ! message
+    case message => log.info("I can't process this message")
+  }
+
+  override def supervisorStrategy: SupervisorStrategy = AllForOneStrategy() {
+    case _: Exception => SupervisorStrategy.Restart
+  }
+}
+```
+
+The Supervisor Actor creates an instance of each of the processing line actor with
+the reference to the next actor in the processing line. It also implements a receive method
+that gets the message to be processed and sends it to the first actor in the line. 
+It also implements an all for one strategy meaning it restarts all actors after receiving an error.
+
+```scala
+class SplitActor(nextActor: ActorRef) extends Actor with ActorLogging {
+
+  override def receive: Receive = {
+    case message: String =>
+      val myArray = message.split("\\s+")
+      nextActor ! myArray
+    case message =>
+      throw new Exception("Not fitting type")
+
+  }
+}
+```
+
+The first actor in the line is the Split Actor and divide it by an empty space
+and sends the array to the next array in the line.
+
+```scala
+class SwappingActor(nextActor: ActorRef) extends Actor with ActorLogging {
+
+  override def receive: Receive = {
+    case message: Array[String] =>
+      val result = message.map(word => word.toLowerCase())
+      var list = List[String]()
+      for (i <- result) {
+        var string = i;
+        var c = i.length - 1
+        while (c != -1) {
+
+          if (i(c) == 'm')
+           { string = string.patch(c, "n", 1)
+            c -= 1 }
+          else if (i(c) == 'n')
+           { string = string.patch(c, "m", 1)
+            c -= 1}
+          else c -= 1
+        }
+        list = list :+ string;
+
+      }
+      nextActor ! list
+    case message => log.info("I just accept arrays of strings")
+
+  }
+}
+```
+The next actor in the line is the swapping actor and it receives an array of strings
+as a message. Then, it goes over each word in the array and swaps n for m and viceversa.
+It puts the words in a list and sends the list to the next actor.
+
+```scala
+class JoinerActor extends Actor with ActorLogging {
+  override def receive: Receive = {
+    case message: List[String] =>
+      val result = message.mkString(" ")
+      println(result)
+    case message => log.info("I only accept lists of strings")
+
+  }
+}
+```
+
+The joiner actor receives a list and joins it back into a string and print the result.
+
+##P0W5
+
+**Task 1** -- HTTP Request
+```scala
+def makeRequest(uri: String): HttpResponse[String] = {
+  val client = HttpClient.newHttpClient()
+  val request = HttpRequest.newBuilder()
+    .uri(URI.create(uri))
+    .build()
+  client.send(request, HttpResponse.BodyHandlers.ofString())
+}
+```
+Inside the function makeRequest() I give as an input the uri which I want 
+to send the request to. I initialize an Http Client, then I create a request and I send
+it with my client to the uri.
+
+**Task 2** -- Scrape
+```scala
+def scrape(response: HttpResponse[String]): List[Map[String, Any]]= {
+  val doc = Jsoup.parse(response.body())
+  val quotes = doc.select(".quote").asScala
+
+  quotes.map { quote =>
+    val author = quote.select(".author").text()
+    val text = quote.select(".text").text().replaceAll("\u201C|\u201D", "")
+    val tags = quote.select(".tag").eachText().asScala.toList
+    Map("author" -> author, "quote" -> text, "tags" -> tags)
+  }.toList
+}
+```
+
+In this function I process the response body that I get from the request with Jsoup
+Then, I select all of the "quote" classes. Then I create a map where for each quote 
+I select the author, text and tag classes. Then I add all maps to a list.
+
+**Task 2** -- To File
+
+```scala
+def encode(data: List[Map[String, Any]]): Unit = {
+  data.foreach(println)
+  val jValue = Extraction.decompose(data)
+  val jsonString = pretty(render(jValue))
+  val writer = new PrintWriter(new File("quotes.json"))
+  writer.write(jsonString)
+  writer.close()
+}
+```
+
+In this function I decompose the List so that it can be processed by json library.
+It is decomposed into jArray and jStrings. Then, I process it with json4s, and make it into 
+a json string that I write then to the file quotes.json.
 ## Conclusion
 
-Here goes your conclusion about this project..
+This project was meant to introduce us to the language of our choice. I got to understand
+the syntax of scala. I learnt how to create Scala Actors and how to send messages to them
+and to process those messages inside the actor. Also, I learned how to create unit tests and work 
+with different libraries inside sbt files. Talking about actors, I learned how to implement actor
+supervision and error handling strategies. Finally, I got to know how to make Http Requests in
+scala and how to process the answer
 
 ## Bibliography
 
-Here go all links / references to stuff you've used to study for this project..
+https://docs.scala-lang.org/tour/tour-of-scala.html
+
+https://docs.scala-lang.org/getting-started/intellij-track/getting-started-with-scala-in-intellij.html
+
+https://jsoup.org/
+
+https://doc.akka.io/docs/akka/current/actors.html
 

@@ -14,3 +14,14 @@ libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.7.0"
 libraryDependencies += "org.json4s" %% "json4s-native" % "4.0.6"
 
 libraryDependencies += "org.json4s" %% "json4s-jackson" % "4.0.6"
+libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
+libraryDependencies ++= Seq(
+  "org.scalikejdbc" %% "scalikejdbc"       % "4.0.0",
+  "com.h2database"  %  "h2"                % "2.1.214",
+  "ch.qos.logback"  %  "logback-classic"   % "1.4.5",
+  "org.scalikejdbc" %% "scalikejdbc-test" % "4.0.0" % "test",
+  "org.scalikejdbc" %% "scalikejdbc-config" % "4.0.0"
+)
+
+libraryDependencies += "com.microsoft.sqlserver" % "mssql-jdbc" % "12.2.0.jre11"
+

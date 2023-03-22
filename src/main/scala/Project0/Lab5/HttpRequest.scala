@@ -15,24 +15,13 @@ import org.json4s.native.JsonMethods._
 
 implicit val formats: Formats =  DefaultFormats
 
-
-
-
-
-//import org.json4s.native.Serialization
-
-//import play.api.libs.json._
-case class Quote(author: String, text: String, tags: List[String])
-
 object HttpExample {
-
 
   def makeRequest(uri: String): HttpResponse[String] = {
     val client = HttpClient.newHttpClient()
     val request = HttpRequest.newBuilder()
       .uri(URI.create(uri))
       .build()
-
     client.send(request, HttpResponse.BodyHandlers.ofString())
   }
 
