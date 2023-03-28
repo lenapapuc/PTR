@@ -1,39 +1,46 @@
 package Project1
-import akka.actor.{Actor, ActorSystem, Props}
-import akka.stream._
-import akka.stream.scaladsl._
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
-import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 
+class ReaderActor(url: String, printActor: ActorRef, hashtagPrintActor: ActorRef)(implicit materializer: Materializer) extends Actor with ActorLogging {
+  val httpRequest = HttpRequest(uri = url)
+  val responseFuture: Future[HttpResponse] = Http().singleRequest(httpRequest)
 
-  // SSE Reader actor class
-  class SEReaderActor(url: String) extends Actor {
-    val httpRequest = HttpRequest(uri = url)
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(httpRequest)
-    val printActor = context.actorOf(PrintActor.props)
-
-    responseFuture.foreach { response =>
-      response.entity.dataBytes
+  responseFuture.onComplete {
+    case Success(response) =>
+      val source: Source[ServerSentEvent, Any] = response.entity.dataBytes
         .map(_.decodeString("UTF-8"))
-        .map(ServerSentEvent(_).data)
-        .runForeach(tweetText => {
-          printActor ! PrintActor.Print(tweetText)
-        })(materializer)
-    }(context.dispatcher)
+        .map(ServerSentEvent(_))
 
-    override def receive: Receive = {
-      case _ =>
-    }
+      source.runForeach(event => {
+        val tweetText = event.data.stripPrefix("\n").split("\ndata: ", 2)(1)
+        //println(tweetText)
+        printActor ! event
+        hashtagPrintActor ! HashtagPrintActor.AddTweet(tweetText)
+      })
+
+    case Failure(ex) =>
+      log.error(ex, "Request failed")
+      context.stop(self)
   }
 
-  // SSE Reader actor companion object
-  object SEReaderActor {
-    def props(url: String): Props = Props(new SEReaderActor(url))
+  override def receive: Receive = {
+    case _ =>
   }
+}
 
+// Reader actor companion object
+object ReaderActor {
+  def props(url: String, printActor: ActorRef, hashtagPrintActor: ActorRef)(implicit materializer: Materializer): Props =
+    Props(new ReaderActor(url, printActor, hashtagPrintActor))
+}
 

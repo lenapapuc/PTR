@@ -1,51 +1,62 @@
 package Project1
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Kill}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.stream.ActorMaterializer
-import spray.json._
+import spray.json.*
 
-import DefaultJsonProtocol._
+import scala.util.control.NonFatal
+import java.util.logging.{Level, Logger}
+import scala.concurrent.duration.*
+import DefaultJsonProtocol.*
+import org.apache.commons.math3.distribution.PoissonDistribution as APoissonDistribution
+
+
 
 implicit val system: ActorSystem = ActorSystem("SSEExample")
 implicit val materializer: ActorMaterializer = ActorMaterializer()
-val url = "http://localhost:4000/tweets/1"
 
-// SSE Reader actor
-val sseReaderActor = system.actorOf(SEReaderActor.props(url))
 
-// Print actor class
-import scala.util.control.NonFatal
-import java.util.logging.{Level, Logger}
-
-class PrintActor extends Actor {
+class PrintActor(meanSleepTime: FiniteDuration) extends Actor with ActorLogging {
 
   private val logger: Logger = Logger.getLogger(getClass.getName)
 
+
   override def receive: Receive = {
-    case PrintActor.Print(tweetText) =>
+    case tweetText: ServerSentEvent =>
       try {
-        val serverSentEvent: ServerSentEvent = ServerSentEvent(tweetText)
+        val jsonStr = tweetText.data.stripPrefix("\n").split("\ndata:", 2)(1)
 
-        val jsonStr = serverSentEvent.data.stripPrefix("\n").split("\ndata: ", 2)(1)
-
-        // parse the JSON data
         val tweetJson = jsonStr.parseJson
-        val tweet = tweetJson.asJsObject.fields("message").asJsObject.fields("tweet").asJsObject.fields("text").convertTo[String]
 
-        println(s"This the tweet: $tweet")
+
+          val tweet = tweetJson.asJsObject.fields("message").asJsObject.fields("tweet").asJsObject.fields("text").convertTo[String]
+          println(s"This the tweet: $tweet received by actor $self")
+
+
+
+        val lambda = meanSleepTime.toMillis.toDouble
+        val poissonDist = new APoissonDistribution(lambda)
+        val sleepTime = poissonDist.sample().millis
+       // println(s"I slept $sleepTime millis")
+        Thread.sleep(sleepTime.toMillis)
       } catch {
-        case NonFatal(e) =>
-          logger.log(Level.WARNING, "Error occurred")
+        case e : Exception =>
+          println(e)
+          throw e
       }
+
+  }
+
+   override def postRestart(reason: Throwable): Unit  =
+  {
+    println(s"I $self have been restarted due to $reason")
   }
 }
 
 
-
-
 // Print actor companion object
 object PrintActor {
-  case class Print(tweetText: String)
-  def props: Props = Props(new PrintActor)
+  case class Print(tweetText: ServerSentEvent)
+  def props(meanSleepTime: FiniteDuration): Props = Props(new PrintActor(meanSleepTime))
 }

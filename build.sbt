@@ -25,3 +25,5 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "com.microsoft.sqlserver" % "mssql-jdbc" % "12.2.0.jre11"
 
+libraryDependencies += "org.apache.commons" % "commons-math3" % "3.6.1"
+libraryDependencies += "org.json" % "json" % "20210307"

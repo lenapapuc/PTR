@@ -1,13 +1,24 @@
 package Project1
 
 import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, Materializer}
+
+import concurrent.duration.DurationInt
 
 object Main extends App {
   implicit val system: ActorSystem = ActorSystem("SSEExample")
+  implicit val materializer: Materializer = ActorMaterializer()
+
   val url = "http://localhost:4000/tweets/1"
   val url2 = "http://localhost:4000/tweets/2"
 
-  val sseReaderActor = system.actorOf(SEReaderActor.props(url))
-  val sseReaderActor2 = system.actorOf(SEReaderActor.props(url2))
+  val meanSleepTime = 1.milliseconds
 
+  val printActor = system.actorOf(PoolSupervisor.props())
+  val printActor2 = system.actorOf(PrintActor.props(meanSleepTime))
+
+  val hashtagPrintActor = system.actorOf(HashtagPrintActor.props(5.seconds))
+
+  val sseReaderActor = system.actorOf(ReaderActor.props(url, printActor, hashtagPrintActor))
+  val sseReaderActor2 = system.actorOf(ReaderActor.props(url2, printActor, hashtagPrintActor))
 }
