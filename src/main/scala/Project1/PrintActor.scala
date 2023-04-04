@@ -21,6 +21,8 @@ class PrintActor(meanSleepTime: FiniteDuration) extends Actor with ActorLogging 
 
   private val logger: Logger = Logger.getLogger(getClass.getName)
 
+  private val curseWords = List("arse", "arsehole", "ass","asshole","bitch","cock","cocksucker","cunt","crap","dick","damn","dickhead","fuck",
+  "fucker","horseshit","motherfucker","nigga","piss","pussy", "shit","slut","whore","hoe","wanker")
 
   override def receive: Receive = {
     case tweetText: ServerSentEvent =>
@@ -31,7 +33,13 @@ class PrintActor(meanSleepTime: FiniteDuration) extends Actor with ActorLogging 
 
 
           val tweet = tweetJson.asJsObject.fields("message").asJsObject.fields("tweet").asJsObject.fields("text").convertTo[String]
-          println(s"This the tweet: $tweet received by actor $self")
+        val censoredTweet = curseWords.foldLeft(tweet) { (censored, curse) =>
+          censored.replaceAll(raw"\b(?i)" + curse + raw"\b", "*" * curse.length)
+        }
+        println(" ")
+        println(s"This the tweet: $tweet")
+
+        println(s"This the censored tweet: $censoredTweet received by actor $self")
 
 
 
@@ -42,7 +50,6 @@ class PrintActor(meanSleepTime: FiniteDuration) extends Actor with ActorLogging 
         Thread.sleep(sleepTime.toMillis)
       } catch {
         case e : Exception =>
-          println(e)
           throw e
       }
 
@@ -50,7 +57,7 @@ class PrintActor(meanSleepTime: FiniteDuration) extends Actor with ActorLogging 
 
    override def postRestart(reason: Throwable): Unit  =
   {
-    println(s"I $self have been restarted due to $reason")
+    println(s"I $self have been restarted ")
   }
 }
 

@@ -44,14 +44,13 @@ class HashtagPrintActor(printInterval: FiniteDuration) extends Actor with ActorL
       }
     case "printHashtagCounts" =>
       try {
-        // print the top 5 most popular hashtags
-        //sorts the List in descending order based on the second element of each tuple
+
+        //sort the List in descending order based on the second element of each tuple
         val topHashtags = hashtagCounts.toList.sortBy(-_._2).take(5)
         println(s"Top 5 hashtags: ${topHashtags.map(t => s"${t._1}: ${t._2}").mkString(", ")}")
-        // clear the hashtag counts for the next print interval
         hashtagCounts = mutable.Map.empty
       } catch {
-        case NonFatal(e) => 
+        case NonFatal(e) =>
       }
   }
 }

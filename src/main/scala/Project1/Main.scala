@@ -14,11 +14,13 @@ object Main extends App {
 
   val meanSleepTime = 1.milliseconds
 
-  val printActor = system.actorOf(PoolSupervisor.props())
-  val printActor2 = system.actorOf(PrintActor.props(meanSleepTime))
+  val poolSupervisor = system.actorOf(PoolSupervisor.props(),"PoolSupervisor")
+  val printActor2 = system.actorOf(PrintActor.props(meanSleepTime), "PrintActor")
+
+  
 
   val hashtagPrintActor = system.actorOf(HashtagPrintActor.props(5.seconds))
 
-  val sseReaderActor = system.actorOf(ReaderActor.props(url, printActor, hashtagPrintActor))
-  val sseReaderActor2 = system.actorOf(ReaderActor.props(url2, printActor, hashtagPrintActor))
+  val sseReaderActor = system.actorOf(ReaderActor.props(url, poolSupervisor, hashtagPrintActor), "sseReader1")
+  val sseReaderActor2 = system.actorOf(ReaderActor.props(url2, poolSupervisor, hashtagPrintActor), "sseReader2")
 }
