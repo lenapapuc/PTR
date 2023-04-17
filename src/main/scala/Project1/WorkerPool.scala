@@ -12,7 +12,7 @@ object PoolSupervisor {
 }
 
 class PoolSupervisor extends Actor {
-  import TaskManager._
+  import Manager._
 
   var router: Router = {
     val routees = Vector.fill(3) {
@@ -24,7 +24,7 @@ class PoolSupervisor extends Actor {
     Router(RoundRobinRoutingLogic(), routees)
   }
 
-  val taskManager = context.actorOf(TaskManager.props(self, 20, 10))
+  val taskManager = context.actorOf(Manager.props(self, 10, 10))
 
   override def receive: Receive = {
     case msg : ServerSentEvent =>

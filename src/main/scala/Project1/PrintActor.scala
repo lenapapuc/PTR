@@ -39,7 +39,7 @@ class PrintActor(meanSleepTime: FiniteDuration) extends Actor with ActorLogging 
         println(" ")
         println(s"This the tweet: $tweet")
 
-        println(s"This the censored tweet: $censoredTweet received by actor $self")
+        println(s"This the censored tweet: $censoredTweet")
 
 
 

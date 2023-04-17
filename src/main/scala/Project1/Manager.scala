@@ -28,7 +28,7 @@ class Manager(poolSupervisor: ActorRef, taskThreshold: Int, maxWorkers: Int) ext
   var workerCount = 3
   var tasksPerSeconds = 0
 
-  context.system.scheduler.scheduleWithFixedDelay(5.seconds, 5.seconds, self, ResetTaskCount)(context.dispatcher)
+  context.system.scheduler.scheduleWithFixedDelay(1.seconds, 1.seconds, self, ResetTaskCount)(context.dispatcher)
 
   override def receive: Receive = {
     case msg: ServerSentEvent =>
@@ -41,7 +41,7 @@ class Manager(poolSupervisor: ActorRef, taskThreshold: Int, maxWorkers: Int) ext
         
       }
     case ResetTaskCount =>
-      tasksPerSeconds = taskCount/(5 * workerCount)
+      tasksPerSeconds = taskCount/(workerCount)
       println(s"Each actor did $tasksPerSeconds")
       if (tasksPerSeconds >= taskThreshold && workerCount < maxWorkers) {
         poolSupervisor ! IncreaseWorkers
