@@ -17,3 +17,10 @@ sequenceDiagram
     Topic Actor -->> Subscription Actor: Message
      Subscription Actor-->>Consumer: Message 
 ```
+
+
+```mermaid
+graph 
+A[Broker]  --> B[Topic Actor]
+A --> C[Subscription Actor]
+```
