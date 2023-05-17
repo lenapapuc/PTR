@@ -10,13 +10,9 @@ import java.net.InetSocketAddress
 case class AddToTopic(topic: String, content: String)
 class TelnetActor extends Actor {
   val address = new InetSocketAddress("localhost", 23)
-
-  // Create the subscription actor and topic dictionary actor
   val subscriptionActor: ActorRef = context.actorOf(Props[SubscriptionActor](), "subscriberActor")
   val topicDictionary: ActorRef = context.actorOf(Props(new TopicDictionaryActor(subscriptionActor)), "topicDictionaryActor")
   val deadLetterChannel:ActorRef = context.actorOf(Props[DeadLetterChannel](), "deadLetterChannel")
-
-  // Create a Tcp server actor to handle incoming connections
   val tcpServer: ActorRef = context.actorOf(Props(new TcpServer(subscriptionActor, topicDictionary, deadLetterChannel)))
 
   override def preStart(): Unit = {
@@ -71,8 +67,6 @@ class TcpConnectionHandler(connection: ActorRef, subscriptionActor: ActorRef, to
         deadLetterChannel ! message
 
       }
-
-
     case Tcp.PeerClosed =>
       println("Connection closed.")
       context.stop(self)

@@ -32,8 +32,7 @@ class SubscriptionActor extends Actor {
         subscribersByTopic += (topic -> Set(subscriber))
         subscriber ! Write(ByteString(s"Subscribed\n"))
       }
-
-
+      
     case Unsubscribe(topic, subscriber) =>
       if(subscribersByTopic.contains(topic)) {
         val subscribers = subscribersByTopic(topic)
